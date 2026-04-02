@@ -3,11 +3,7 @@ import crypto from "crypto";
 
 // ✅ Schema variable name = Token
 const Token = new mongoose.Schema({
-  user: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    required: true
-  },
+  
 
   totalAmount: Number,
   remainingAmount: Number,
@@ -33,18 +29,18 @@ const Token = new mongoose.Schema({
   isLocked: { type: Boolean, default: false }
 });
 
-// ✅ Use SAME name here
-Token.pre("save", function (next) {
-  if (!this.tokenId) {
-    this.tokenId = crypto.randomBytes(8).toString("hex");
-  }
+// // ✅ Use SAME name here
+// Token.pre("save", function (next) {
+//   if (!this.tokenId) {
+//     this.tokenId = crypto.randomBytes(8).toString("hex");
+//   }
 
-  if (this.isNew) {
-    this.remainingAmount = this.totalAmount;
-  }
+//   if (this.isNew) {
+//     this.remainingAmount = this.totalAmount;
+//   }
 
-  next();
-});
+//   next();
+// });
 
 // ✅ Export model
 export default mongoose.model("Token", Token);

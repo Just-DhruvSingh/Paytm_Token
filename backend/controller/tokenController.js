@@ -1,100 +1,81 @@
 import Token from "../model/Token.js";
 import bcrypt from "bcrypt";
 
+// 💰 Fake wallet (for hackathon)
+let DEMO_BALANCE = 1000;
+
+// ⏳ Helper for validity
+const getExpiryTime = (validity) => {
+  const now = Date.now();
+
+  switch (validity) {
+    case "1d":
+      return new Date(now + 1 * 24 * 60 * 60 * 1000);
+    case "7d":
+      return new Date(now + 7 * 24 * 60 * 60 * 1000);
+    case "30d":
+      return new Date(now + 30 * 24 * 60 * 60 * 1000);
+    case "365d":
+      return new Date(now + 365 * 24 * 60 * 60 * 1000);
+    default:
+      return new Date(now + 15 * 60 * 1000); // fallback
+  }
+};
+
 // ✅ CREATE TOKEN
 export const createToken = async (req, res) => {
   try {
-    const { user, amount, pin } = req.body;
+    console.log("BODY:", req.body); // 🔥 ADD THIS
 
-    // hash pin
+    const { amount, pin, validity } = req.body;
+
+    if (!amount || !pin) {
+      return res.status(400).json({
+        success: false,
+        message: "Amount and PIN required",
+      });
+    }
+
+    if (DEMO_BALANCE < amount) {
+      return res.status(400).json({
+        success: false,
+        message: "Insufficient balance",
+      });
+    }
+
+    DEMO_BALANCE -= amount;
+
     const hashedPin = await bcrypt.hash(pin, 10);
 
+    const expiresAt = getExpiryTime(validity);
+
     const token = new Token({
-      user,
       totalAmount: amount,
+      remainingAmount: amount,
       tokenPin: hashedPin,
-      expiresAt: new Date(Date.now() + 15 * 60 * 1000) // 15 min
+      expiresAt,
     });
 
     await token.save();
 
     res.status(201).json({
-      message: "Token created",
-      tokenId: token.tokenId
+      success: true,
+      token,
     });
 
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("ERROR:", err); // 🔥 ADD THIS
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
 };
 
 export const redeemToken = async (req, res) => {
-  try {
-    const { tokenId, amount, pin } = req.body;
-
-    const token = await Token.findOne({ tokenId });
-
-    if (!token) {
-      return res.status(404).json({ message: "Token not found" });
-    }
-
-    if (new Date() > token.expiresAt) {
-      token.status = "expired"; 
-      await token.save();
-      return res.status(400).json({ message: "Token expired" });
-    }
-
-    if (token.isLocked) {
-      return res.status(403).json({ message: "Token locked" });
-    }
-
-    const isMatch = await bcrypt.compare(pin, token.tokenPin);
-
-    if (!isMatch) {
-      token.failedAttempts += 1;
-      if (token.failedAttempts >= 3) token.isLocked = true;
-      await token.save();
-      return res.status(401).json({ message: "Invalid PIN" });
-    }
-
-    if (token.remainingAmount < amount) {
-      return res.status(400).json({ message: "Insufficient balance" });
-    }
-
-    token.remainingAmount -= amount;
-
-    token.status =
-      token.remainingAmount === 0 ? "redeemed" : "partially_used";
-
-    token.transactions.push({
-      merchantId: "demo",
-      amount
-    });
-
-    await token.save();
-
-    res.json({
-      message: "Payment successful",
-      remainingBalance: token.remainingAmount
-    });
-
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  res.json({ message: "Redeem working" });
 };
 
 export const getToken = async (req, res) => {
-  try {
-    const { tokenId } = req.params;
-
-    const token = await Token.findOne({ tokenId });
-
-    if (!token) {
-      return res.status(404).json({ message: "Not found" });
-    }
-
-    res.json(token);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  res.json({ message: "Get token working" });
 };
