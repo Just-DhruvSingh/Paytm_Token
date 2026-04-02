@@ -129,6 +129,7 @@ export async function ensureSampleTokens() {
   }
 }
 
+<<<<<<< HEAD
 export const createToken = async (req, res) => {
   try {
     const {
@@ -161,12 +162,68 @@ export const createToken = async (req, res) => {
     }
 
     const hashedPin = await bcrypt.hash(String(pin), 10);
+=======
+// 💰 Fake wallet (for hackathon)
+let DEMO_BALANCE = 1000;
+
+// ⏳ Helper for validity
+const getExpiryTime = (validity) => {
+  const now = Date.now();
+
+  switch (validity) {
+    case "1d":
+      return new Date(now + 1 * 24 * 60 * 60 * 1000);
+    case "7d":
+      return new Date(now + 7 * 24 * 60 * 60 * 1000);
+    case "30d":
+      return new Date(now + 30 * 24 * 60 * 60 * 1000);
+    case "365d":
+      return new Date(now + 365 * 24 * 60 * 60 * 1000);
+    default:
+      return new Date(now + 15 * 60 * 1000); // fallback
+  }
+};
+
+// ✅ CREATE TOKEN
+export const createToken = async (req, res) => {
+  try {
+    console.log("BODY:", req.body); // 🔥 ADD THIS
+
+    const { amount, pin, validity } = req.body;
+
+    if (!amount || !pin) {
+      return res.status(400).json({
+        success: false,
+        message: "Amount and PIN required",
+      });
+    }
+
+    if (DEMO_BALANCE < amount) {
+      return res.status(400).json({
+        success: false,
+        message: "Insufficient balance",
+      });
+    }
+
+    DEMO_BALANCE -= amount;
+
+    const hashedPin = await bcrypt.hash(pin, 10);
+>>>>>>> 3d2fb74c8ea29d40ce66683d479116fb5d3c3b90
+
+    const expiresAt = getExpiryTime(validity);
 
     const token = new Token({
+<<<<<<< HEAD
       user,
       totalAmount: parsedAmount,
       tokenPin: hashedPin,
       expiresAt: expiryDate
+=======
+      totalAmount: amount,
+      remainingAmount: amount,
+      tokenPin: hashedPin,
+      expiresAt,
+>>>>>>> 3d2fb74c8ea29d40ce66683d479116fb5d3c3b90
     });
 
     await token.save();
@@ -177,9 +234,14 @@ export const createToken = async (req, res) => {
     );
 
     res.status(201).json({
+<<<<<<< HEAD
       message: "Token created",
       token: createdToken,
       wallet: updatedSummary.wallet
+=======
+      success: true,
+      token,
+>>>>>>> 3d2fb74c8ea29d40ce66683d479116fb5d3c3b90
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -191,11 +253,16 @@ export const listTokens = async (req, res) => {
     const summary = await buildWalletSummary();
     res.json(summary);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("ERROR:", err); // 🔥 ADD THIS
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
 };
 
 export const redeemToken = async (req, res) => {
+<<<<<<< HEAD
   try {
     const { tokenId, amount, pin } = req.body;
     const parsedAmount = Number(amount);
@@ -274,3 +341,11 @@ export const getToken = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+=======
+  res.json({ message: "Redeem working" });
+};
+
+export const getToken = async (req, res) => {
+  res.json({ message: "Get token working" });
+};
+>>>>>>> 3d2fb74c8ea29d40ce66683d479116fb5d3c3b90

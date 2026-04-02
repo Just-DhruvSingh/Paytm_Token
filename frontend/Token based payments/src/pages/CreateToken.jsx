@@ -1,170 +1,134 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { createToken, fetchTokens } from "../lib/tokenApi";
-
-const validityOptions = [
-  { label: "1 day", value: "day" },
-  { label: "1 week", value: "week" },
-  { label: "1 month", value: "month" },
-  { label: "1 year", value: "year" }
-];
+const BASE_URL = "http://localhost:8000/api/token";
 
 export default function CreateToken() {
-  const navigate = useNavigate();
+    const navigate = useNavigate();
   const [amount, setAmount] = useState("");
   const [pin, setPin] = useState("");
-  const [validity, setValidity] = useState("day");
+  const [validity, setValidity] = useState("1d");
   const [tokenData, setTokenData] = useState(null);
-  const [wallet, setWallet] = useState({
-    availableBalance: 0,
-    lockedAmount: 0
-  });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false); // ✅ FIX
 
-  useEffect(() => {
-    let active = true;
+ const handleCreate = async () => {
+  try {
+    setLoading(true);
 
-    async function loadWallet() {
-      try {
-        const data = await fetchTokens();
-        if (active) {
-          setWallet(data.wallet);
-        }
-      } catch {
-        if (active) {
-          setWallet({
-            availableBalance: 0,
-            lockedAmount: 0
-          });
-        }
-      }
-    }
-
-    loadWallet();
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const handleCreate = async () => {
-    try {
-      setLoading(true);
-      setError("");
-
-      const data = await createToken({
-        user: "Demo User",
-        amount,
+    const res = await fetch(`${BASE_URL}/create`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        amount: Number(amount),
         pin,
-        validity
+        validity,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      navigate("/success", {
+        state: { token: data.token },
+      });
+    } else {
+      navigate("/failure", {
+        state: { message: data.message },
       });
 
-      setTokenData(data.token);
-      setWallet(data.wallet);
-      setAmount("");
-      setPin("");
-      setValidity("day");
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
     }
-  };
+
+  } catch (err) {
+    navigate("/failure", {
+      state: { message: "Server error" },
+    });
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100 px-4">
-      <div className="w-full max-w-[390px] rounded-xl bg-white p-5 shadow-lg">
-        <div className="mb-4 flex items-center justify-between">
-          <button
-            type="button"
-            onClick={() => navigate("/token")}
-            className="text-sm font-medium text-[#002970]"
-          >
-            Back
-          </button>
-          <h1 className="text-xl font-bold">Create Token</h1>
-          <div className="w-10" />
-        </div>
+    <div className="flex justify-center bg-gray-300 min-h-screen py-6">
 
-        <div className="mb-4 rounded-lg bg-[#f5f9ff] p-3 text-center">
-          <p className="text-sm text-gray-500">Wallet Balance</p>
-          <p className="mt-1 text-lg font-semibold text-[#002970]">
-            Rs. {wallet.availableBalance}
-          </p>
-          <p className="mt-1 text-[11px] text-slate-500">
-            Locked in tokens: Rs. {wallet.lockedAmount}
+      {/* 📱 PHONE FRAME */}
+      <div className="w-[390px] bg-[#f5f7fb] rounded-[35px] shadow-xl overflow-hidden">
+
+        {/* 🔵 HEADER */}
+        <div className="bg-[#00baf2] text-white p-4">
+          <h1 className="text-lg font-semibold">Create Token</h1>
+          <p className="text-xs opacity-80">
+            Secure prepaid payments
           </p>
         </div>
 
-        <input
-          type="number"
-          placeholder="Enter Amount INR"
-          className="mb-3 w-full rounded-lg border p-3"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-        />
+        {/* 🧾 CONTENT */}
+        <div className="p-4">
 
-        <input
-          type="password"
-          placeholder="Set Token PIN"
-          className="mb-3 w-full rounded-lg border p-3"
-          value={pin}
-          onChange={(e) => setPin(e.target.value)}
-        />
+          {/* FORM CARD */}
+          <div className="bg-white rounded-xl shadow p-4">
 
-        <select
-          className="mb-4 w-full rounded-lg border p-3"
-          value={validity}
-          onChange={(e) => setValidity(e.target.value)}
-        >
-          {validityOptions.map((option) => (
-            <option key={option.value} value={option.value}>
-              Validity: {option.label}
-            </option>
-          ))}
-        </select>
+            {/* 💰 Amount */}
+            <p className="text-sm text-gray-500 mb-1">Amount</p>
+            <input
+              type="number"
+              placeholder="₹ Enter amount"
+              className="w-full p-3 border rounded-lg mb-4 outline-none"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+            />
 
-        {error ? (
-          <p className="mb-3 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-600">
-            {error}
-          </p>
-        ) : null}
+            {/* 🔐 PIN */}
+            <p className="text-sm text-gray-500 mb-1">Set PIN</p>
+            <input
+              type="password"
+              placeholder="Enter 4-digit PIN"
+              className="w-full p-3 border rounded-lg mb-4 outline-none"
+              value={pin}
+              onChange={(e) => setPin(e.target.value)}
+            />
 
-        <button
-          type="button"
-          onClick={handleCreate}
-          disabled={loading}
-          className="w-full rounded-lg bg-blue-600 py-3 text-white"
-        >
-          {loading ? "Creating..." : "Generate Token"}
-        </button>
-
-        {tokenData && (
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-500">Token ID</p>
-            <p className="break-all font-semibold">{tokenData.tokenId}</p>
-
-            <p className="mt-3 text-sm text-gray-500">Available for payment</p>
-            <p className="mt-1 text-green-600">INR {tokenData.remainingAmount} Ready</p>
-
-            <p className="mt-3 text-xs text-slate-500">
-              Valid till: {new Date(tokenData.expiresAt).toLocaleString()}
+            {/* ⏳ VALIDITY */}
+            <p className="text-sm text-gray-500 mb-2">
+              Select Validity
             </p>
 
-            <p className="mt-2 text-xs text-slate-500">
-              Updated wallet balance: Rs. {wallet.availableBalance}
-            </p>
-
-            <button
-              type="button"
-              onClick={() => navigate("/token/history")}
-              className="mt-4 rounded-lg border border-[#cfefff] px-4 py-2 text-sm font-semibold text-[#00baf2]"
-            >
-              View Token History
-            </button>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { label: "1 Day", value: "1d" },
+                { label: "7 Days", value: "7d" },
+                { label: "30 Days", value: "30d" },
+                { label: "365 Days", value: "365d" },
+              ].map((v) => (
+                <button
+                  key={v.value}
+                  onClick={() => setValidity(v.value)}
+                  className={`p-3 rounded-lg text-sm border transition ${
+                    validity === v.value
+                      ? "bg-[#00baf2] text-white"
+                      : "bg-white"
+                  }`}
+                >
+                  {v.label}
+                </button>
+              ))}
+            </div>
           </div>
-        )}
+
+          {/* 🔘 BUTTON */}
+          <button
+            onClick={handleCreate}
+            disabled={loading}
+            className="w-full bg-[#002970] text-white py-3 rounded-full mt-5 shadow"
+          >
+            {loading ? "Processing..." : "Generate Token"}
+          </button>
+
+          {/* 🎉 RESULT */}
+          
+          
+
+        </div>
       </div>
     </div>
   );
