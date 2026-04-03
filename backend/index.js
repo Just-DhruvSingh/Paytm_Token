@@ -10,18 +10,28 @@ dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 6000;
+
+function normalizeOrigin(origin) {
+  return origin?.trim().replace(/\/+$/, "") || "";
+}
+
 const allowedOrigins = [
   process.env.FRONTEND_URL,
-  ...(process.env.FRONTEND_URLS || "")
-    .split(",")
-    .map((origin) => origin.trim())
-    .filter(Boolean)
-].filter(Boolean);
+  ...(process.env.FRONTEND_URLS || "").split(",")
+]
+  .map(normalizeOrigin)
+  .filter(Boolean);
 
 app.use(
   cors({
     origin(origin, callback) {
-      if (!origin || allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
+      const normalizedOrigin = normalizeOrigin(origin);
+
+      if (
+        !normalizedOrigin ||
+        allowedOrigins.length === 0 ||
+        allowedOrigins.includes(normalizedOrigin)
+      ) {
         return callback(null, true);
       }
 

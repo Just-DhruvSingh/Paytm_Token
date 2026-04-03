@@ -35,15 +35,26 @@ Project folder:
 
 Required environment variable:
 
-- `VITE_TOKEN_API_BASE_URL=https://your-backend-domain.onrender.com/api/token`
+- Optional: `VITE_TOKEN_API_BASE_URL=https://your-backend-domain.onrender.com`
 
-The frontend includes a `vercel.json` file so React Router routes work after deployment.
+The frontend includes a `vercel.json` file that:
+
+- keeps React Router routes working after deployment
+- proxies `/api/token` to `https://fintech-token-backend.onrender.com`
+
+If you deploy the backend with a different Render service name or domain, update
+`frontend/Token based payments/vercel.json` to match that backend URL and redeploy
+the frontend.
 
 ## 3. Update CORS
 
 After you get your Vercel frontend URL, set this on Render:
 
 - `FRONTEND_URL=https://your-frontend-domain.vercel.app`
+
+If you use a custom domain or multiple Vercel domains, add them in:
+
+- `FRONTEND_URLS=https://your-custom-domain.com,https://your-preview-domain.vercel.app`
 
 Then redeploy the backend.
 
